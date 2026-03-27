@@ -156,11 +156,18 @@ Custom sources: implement the `Source` base class and register with `@register_s
 
 ## Generate Configs with AI
 
-Don't want to write YAML by hand? Use any LLM to generate a config. Describe your sources, routing logic, and permissions in plain English and get a production-ready YAML file. Then validate: `context-router validate --config generated-config.yaml`
+Don't want to write YAML by hand? Use any LLM to generate a config. Copy-paste one of our [ready-made prompts](https://cohorte-ai.github.io/context-router/ai-config-generator/) and get a production-ready YAML file in seconds. Prompts are included for:
+
+- Generating a full config from scratch (the AI asks about your sources and agents)
+- Extending an existing config with new sources or routes
+- Converting plain-English routing rules to YAML
+- Security-auditing an existing config for permission gaps
+
+Then validate: `context-router validate --config generated-config.yaml`
 
 ## Documentation
 
-Full documentation at **[cohorte-ai.github.io/context-router](https://cohorte-ai.github.io/context-router/)** — including the [configuration reference](https://cohorte-ai.github.io/context-router/configuration/), [source types](https://cohorte-ai.github.io/context-router/sources/), [expression language](https://cohorte-ai.github.io/context-router/expressions/), [permissions](https://cohorte-ai.github.io/context-router/permissions/), and [budget management](https://cohorte-ai.github.io/context-router/budget/).
+Full documentation at **[cohorte-ai.github.io/context-router](https://cohorte-ai.github.io/context-router/)** — including the [configuration reference](https://cohorte-ai.github.io/context-router/config-syntax/), [source types](https://cohorte-ai.github.io/context-router/sources/), [expression language](https://cohorte-ai.github.io/context-router/expressions/), [permissions](https://cohorte-ai.github.io/context-router/permissions/), and [budget management](https://cohorte-ai.github.io/context-router/budget/).
 
 ## Part of the theaios Ecosystem
 
