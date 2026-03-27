@@ -1,9 +1,9 @@
 <div align="center">
   <a href="https://cohorte-ai.github.io/context-router/">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset=".github/images/TheAIOS-ContextRouter-darkmode.svg">
-      <source media="(prefers-color-scheme: light)" srcset=".github/images/TheAIOS-ContextRouter.svg">
-      <img alt="theaios-context-router" src=".github/images/TheAIOS-ContextRouter.svg" width="60%">
+      <source media="(prefers-color-scheme: dark)" srcset=".github/images/TheAIOS-Context-Router-darkmode.svg">
+      <source media="(prefers-color-scheme: light)" srcset=".github/images/TheAIOS-Context-Router.svg">
+      <img alt="theaios-context-router" src=".github/images/TheAIOS-Context-Router.svg" width="60%">
     </picture>
   </a>
 </div>
