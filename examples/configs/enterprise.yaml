@@ -1,0 +1,185 @@
+# Enterprise Context Router Configuration
+# Full-featured setup with all source types, routes, permissions, and budget control.
+
+version: "1.0"
+
+metadata:
+  name: enterprise-router
+  description: Enterprise context routing with multi-source, permission tiers, and budget management
+  author: platform-team
+
+variables:
+  company_domain: "acme.com"
+  max_api_results: 10
+
+sources:
+  # Static system instructions
+  system_prompt:
+    type: inline
+    content: |
+      You are an enterprise AI assistant for Acme Corp.
+      Follow all company policies. Do not share confidential information
+      with unauthorized agents. Cite sources when possible.
+    priority: 100
+    tags:
+      - core
+      - always-include
+
+  # Local policy documents
+  policies:
+    type: directory
+    path: "../data/policies"
+    patterns:
+      - "**/*.md"
+    exclude_patterns:
+      - "**/drafts/**"
+      - "**/.DS_Store"
+    recursive: true
+    max_file_size: 1000000
+    tags:
+      - policies
+      - hr
+
+  # Project documentation
+  projects:
+    type: directory
+    path: "../data/projects"
+    patterns:
+      - "**/*.md"
+      - "**/*.txt"
+    recursive: true
+    tags:
+      - projects
+      - engineering
+
+  # Internal knowledge base API
+  knowledge_base:
+    type: http_api
+    url: "https://kb.acme.com/api/search"
+    method: POST
+    headers:
+      Authorization: "Bearer ${KB_API_TOKEN}"
+      Content-Type: "application/json"
+    body_template: '{"query": "{{query}}", "limit": 5, "include_archived": false}'
+    response_path: "results.items"
+    result_text_field: "content"
+    result_title_field: "title"
+    tags:
+      - knowledge-base
+      - internal
+
+  # Git repository documentation
+  engineering_wiki:
+    type: git_repo
+    path: "/opt/repos/engineering-wiki"
+    ref: "main"
+    patterns:
+      - "docs/**/*.md"
+      - "runbooks/**/*.md"
+    exclude_patterns:
+      - "**/CHANGELOG.md"
+    tags:
+      - engineering
+      - wiki
+
+routes:
+  # Policy questions
+  - name: policy-questions
+    when: 'text contains "policy" or text contains "expense" or text contains "remote work" or text contains "travel"'
+    sources:
+      - system_prompt
+      - policies
+    description: Route policy-related questions to HR docs
+    tags:
+      - hr
+
+  # Engineering questions
+  - name: engineering-questions
+    when: 'text contains "architecture" or text contains "deploy" or text contains "api" or text contains "runbook"'
+    sources:
+      - system_prompt
+      - projects
+      - engineering_wiki
+    description: Route engineering questions to technical sources
+    tags:
+      - engineering
+
+  # Project-specific questions
+  - name: project-queries
+    when: 'text contains "project" or text contains "atlas" or text contains "milestone"'
+    sources:
+      - system_prompt
+      - projects
+    description: Route project questions to project docs
+    tags:
+      - projects
+
+  # Knowledge base search
+  - name: knowledge-search
+    when: 'text contains "how to" or text contains "guide" or text contains "tutorial"'
+    sources:
+      - system_prompt
+      - knowledge_base
+    description: Route how-to questions to the knowledge base API
+
+  # Default fallback
+  - name: default
+    when: ""
+    sources:
+      - system_prompt
+      - policies
+      - projects
+    description: Default route — system prompt + all local docs
+
+permissions:
+  # All agents get the system prompt
+  - agent: "*"
+    allow_sources:
+      - system_prompt
+    default: allow
+
+  # HR bot gets full access to policies
+  - agent: hr-assistant
+    allow_sources:
+      - system_prompt
+      - policies
+      - knowledge_base
+    deny_paths:
+      - "**/confidential/*"
+    default: deny
+
+  # Engineering bot gets technical sources
+  - agent: eng-assistant
+    allow_sources:
+      - system_prompt
+      - projects
+      - engineering_wiki
+      - knowledge_base
+    default: deny
+
+  # External-facing bot gets minimal access
+  - agent: customer-bot
+    allow_sources:
+      - system_prompt
+    deny_sources:
+      - policies
+      - projects
+      - engineering_wiki
+      - knowledge_base
+    deny_paths:
+      - "**/internal/*"
+      - "**/confidential/*"
+    default: deny
+
+budget:
+  max_tokens: 8000
+  ranking: relevance
+  truncation: truncate_end
+  estimator: chars_div4
+  reserve_tokens: 500
+
+cache:
+  enabled: true
+  directory: ".context-router-cache"
+  ttl: 600
+  max_entries: 500

@@ -1,0 +1,53 @@
+# Basic Context Router Configuration
+# Minimal setup with inline prompt + local directory source.
+
+version: "1.0"
+
+metadata:
+  name: basic-example
+  description: Minimal context router with inline and directory sources
+
+sources:
+  system_prompt:
+    type: inline
+    content: |
+      You are a helpful company assistant. Answer questions about
+      company policies and projects based on the provided context.
+      Be concise and cite specific policies when relevant.
+    priority: 10
+
+  company_docs:
+    type: directory
+    path: "../data"
+    patterns:
+      - "**/*.md"
+      - "**/*.txt"
+    exclude_patterns:
+      - "**/.DS_Store"
+      - "**/node_modules/**"
+    recursive: true
+    max_file_size: 500000
+
+routes:
+  - name: default
+    when: ""
+    sources:
+      - system_prompt
+      - company_docs
+    description: Default route — includes system prompt and all docs
+
+  - name: policy-questions
+    when: 'text contains "policy" or text contains "expense" or text contains "remote"'
+    sources:
+      - company_docs
+    description: Route policy-related questions directly to docs
+
+permissions:
+  - agent: "*"
+    default: allow
+
+budget:
+  max_tokens: 4000
+  ranking: relevance
+  truncation: drop
+  estimator: chars_div4

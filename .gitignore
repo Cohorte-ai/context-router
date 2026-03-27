@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.venv/
+.env
+.DS_Store
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.context_router_cache/
+benchmarks/data/
+site/
