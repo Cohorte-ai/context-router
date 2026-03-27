@@ -1,12 +1,14 @@
-"""Quick start example for theaios-context-router.
-
-Run from the examples/ directory:
-    python quickstart.py
-"""
+"""Context Router Quickstart — Route a query to the right sources in 10 lines."""
 
 from __future__ import annotations
 
-from theaios.context_router import Router, load_config, Query
+import os
+from pathlib import Path
+
+from theaios.context_router import Query, Router, load_config
+
+# Run from examples/ so relative paths in YAML configs resolve correctly
+os.chdir(Path(__file__).parent)
 
 # 1. Load your YAML config
 config = load_config("configs/basic.yaml")

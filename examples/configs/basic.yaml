@@ -18,7 +18,7 @@ sources:
 
   company_docs:
     type: directory
-    path: "../data"
+    path: "./data"
     patterns:
       - "**/*.md"
       - "**/*.txt"

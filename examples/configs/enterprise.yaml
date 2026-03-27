@@ -28,7 +28,7 @@ sources:
   # Local policy documents
   policies:
     type: directory
-    path: "../data/policies"
+    path: "./data/policies"
     patterns:
       - "**/*.md"
     exclude_patterns:
@@ -43,7 +43,7 @@ sources:
   # Project documentation
   projects:
     type: directory
-    path: "../data/projects"
+    path: "./data/projects"
     patterns:
       - "**/*.md"
       - "**/*.txt"
