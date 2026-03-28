@@ -56,7 +56,7 @@ class TokenEstimator(Enum):
 # ---------------------------------------------------------------------------
 
 VALID_SOURCE_TYPES = {s.value for s in SourceType}
-VALID_RANKINGS = {r.value for r in Ranking}
+VALID_RANKINGS = {r.value for r in Ranking} | {"embedding"}
 VALID_TRUNCATIONS = {t.value for t in Truncation}
 VALID_DEFAULT_PERMISSIONS = {p.value for p in DefaultPermission}
 VALID_TOKEN_ESTIMATORS = {e.value for e in TokenEstimator}
@@ -124,6 +124,20 @@ class PermissionConfig:
 
 
 @dataclass
+class EmbeddingConfig:
+    """Configuration for embedding-based relevance scoring.
+
+    Used when ``budget.ranking`` is set to ``"embedding"``.
+    Requires ``pip install theaios-context-router[embeddings]``.
+    """
+
+    model: str = "text-embedding-3-small"
+    api_key_env: str = "OPENAI_API_KEY"
+    url: str = "https://api.openai.com/v1/embeddings"
+    cache_dir: str = ".context_router_embeddings"
+
+
+@dataclass
 class BudgetConfig:
     """Token budget configuration."""
 
@@ -132,6 +146,7 @@ class BudgetConfig:
     truncation: str = "drop"
     estimator: str = "chars_div4"
     reserve_tokens: int = 0
+    embedding: EmbeddingConfig | None = None
 
 
 @dataclass

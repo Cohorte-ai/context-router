@@ -13,6 +13,7 @@ from theaios.context_router.types import (
     ContextChunk,
     ContextResponse,
     DefaultPermission,
+    EmbeddingConfig,
     PermissionConfig,
     Query,
     Ranking,
@@ -58,6 +59,7 @@ __all__ = [
     "PermissionConfig",
     "BudgetConfig",
     "CacheConfig",
+    "EmbeddingConfig",
     "RouterMetadata",
     "RouterConfig",
     # Types — runtime

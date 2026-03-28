@@ -16,6 +16,7 @@ from theaios.context_router.types import (
     VALID_TRUNCATIONS,
     BudgetConfig,
     CacheConfig,
+    EmbeddingConfig,
     PermissionConfig,
     RouteConfig,
     RouterConfig,
@@ -226,12 +227,23 @@ def _parse_config(raw: dict[str, object]) -> RouterConfig:
     budget_raw = raw.get("budget", {})
     if not isinstance(budget_raw, dict):
         budget_raw = {}
+    embedding_config: EmbeddingConfig | None = None
+    emb_raw = budget_raw.get("embedding")
+    if isinstance(emb_raw, dict):
+        embedding_config = EmbeddingConfig(
+            model=str(emb_raw.get("model", "text-embedding-3-small")),
+            api_key_env=str(emb_raw.get("api_key_env", "OPENAI_API_KEY")),
+            url=str(emb_raw.get("url", "https://api.openai.com/v1/embeddings")),
+            cache_dir=str(emb_raw.get("cache_dir", ".context_router_embeddings")),
+        )
+
     budget = BudgetConfig(
         max_tokens=int(budget_raw.get("max_tokens", 8000)),
         ranking=str(budget_raw.get("ranking", "relevance")),
         truncation=str(budget_raw.get("truncation", "drop")),
         estimator=str(budget_raw.get("estimator", "chars_div4")),
         reserve_tokens=int(budget_raw.get("reserve_tokens", 0)),
+        embedding=embedding_config,
     )
 
     # Cache

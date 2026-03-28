@@ -94,7 +94,7 @@ class TestValidSets:
         assert VALID_SOURCE_TYPES == {"inline", "directory", "git_repo", "http_api"}
 
     def test_valid_rankings(self) -> None:
-        assert VALID_RANKINGS == {"relevance", "recency", "manual"}
+        assert VALID_RANKINGS == {"relevance", "recency", "manual", "embedding"}
 
     def test_valid_truncations(self) -> None:
         assert VALID_TRUNCATIONS == {"drop", "truncate_end", "truncate_middle"}

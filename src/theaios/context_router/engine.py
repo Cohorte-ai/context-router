@@ -75,6 +75,18 @@ class Router:
         # Initialize cache
         self._cache = Cache(config.cache)
 
+        # Initialize embedding scorer if ranking is "embedding"
+        self._embedding_scorer: object | None = None
+        if config.budget.ranking == "embedding":
+            if config.budget.embedding is None:
+                raise ValueError(
+                    "budget.ranking is 'embedding' but budget.embedding is not configured. "
+                    "Add an embedding section to your budget config."
+                )
+            from theaios.context_router.embedding import EmbeddingScorer
+
+            self._embedding_scorer = EmbeddingScorer(config.budget.embedding)
+
     @property
     def config(self) -> RouterConfig:
         """The loaded router configuration."""
@@ -219,14 +231,34 @@ class Router:
         all_chunks = filter_by_path(all_chunks, permission.deny_paths)
 
         # 5. Relevance scoring
-        for chunk in all_chunks:
-            chunk.relevance_score = score_relevance(q.text, chunk)
-            # Ensure token_count is set
-            if chunk.token_count == 0:
-                chunk.token_count = estimate_tokens(chunk.content, self._config.budget.estimator)
+        if self._embedding_scorer is not None:
+            # Embedding-based scoring (optional, requires API)
+            from theaios.context_router.embedding import EmbeddingScorer
 
-        # 6. Ranking
-        all_chunks = rank_chunks(all_chunks, self._config.budget.ranking)
+            scorer: EmbeddingScorer = self._embedding_scorer  # type: ignore[assignment]
+            scores = scorer.score_batch(q.text, all_chunks)
+            for chunk, score in zip(all_chunks, scores):
+                chunk.relevance_score = score
+                if chunk.token_count == 0:
+                    chunk.token_count = estimate_tokens(
+                        chunk.content, self._config.budget.estimator
+                    )
+        else:
+            # Default: keyword overlap scoring (free, deterministic)
+            for chunk in all_chunks:
+                chunk.relevance_score = score_relevance(q.text, chunk)
+                if chunk.token_count == 0:
+                    chunk.token_count = estimate_tokens(
+                        chunk.content, self._config.budget.estimator
+                    )
+
+        # 6. Ranking (embedding mode still uses "relevance" sorting — by score desc)
+        ranking = (
+            "relevance"
+            if self._config.budget.ranking == "embedding"
+            else self._config.budget.ranking
+        )
+        all_chunks = rank_chunks(all_chunks, ranking)
 
         # 7. Budget trimming
         kept_chunks, was_truncated = apply_budget(
