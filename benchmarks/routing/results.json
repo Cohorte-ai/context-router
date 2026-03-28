@@ -1,0 +1,178 @@
+{
+  "total": 60,
+  "correct": 36,
+  "accuracy": 0.6,
+  "failures": [
+    {
+      "query": "How many PTO days do I get per year?",
+      "expected": "hr-policies",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "What should I do on my first week at the company?",
+      "expected": "hr-policies",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "Can I work from home as a part-time contractor?",
+      "expected": "hr-policies",
+      "got": [
+        "finance",
+        "default"
+      ]
+    },
+    {
+      "query": "What is the maximum hotel rate for business travel in NYC?",
+      "expected": "hr-policies",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "How does the stock option vesting schedule work?",
+      "expected": "hr-policies",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "What are the core working hours for remote employees?",
+      "expected": "hr-policies",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "What are our API authentication standards?",
+      "expected": "engineering",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "How do we handle secrets and credentials?",
+      "expected": "engineering",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "What should I do when API latency is high?",
+      "expected": "engineering",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "What are the P1 alert thresholds?",
+      "expected": "engineering",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "How do we version our REST APIs?",
+      "expected": "engineering",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "What is the status of Project Atlas?",
+      "expected": "projects",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "What are the Q2 engineering priorities?",
+      "expected": "projects",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "What is Project Sentinel about?",
+      "expected": "projects",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "Why are we migrating away from Salesforce?",
+      "expected": "projects",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "When is the iOS beta expected to ship?",
+      "expected": "projects",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "What tech stack is Atlas built on?",
+      "expected": "projects",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "What is the goal for reducing data processing costs?",
+      "expected": "projects",
+      "got": [
+        "finance",
+        "default"
+      ]
+    },
+    {
+      "query": "What compliance certifications are we pursuing?",
+      "expected": "projects",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "What is the CRM data migration plan?",
+      "expected": "projects",
+      "got": [
+        "engineering",
+        "default"
+      ]
+    },
+    {
+      "query": "How much do we spend on AWS per month?",
+      "expected": "finance",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "How much do we pay for Slack and GitHub?",
+      "expected": "finance",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "How do we compare to Salesforce?",
+      "expected": "sales",
+      "got": [
+        "default"
+      ]
+    },
+    {
+      "query": "What results did HealthFirst achieve with our platform?",
+      "expected": "sales",
+      "got": [
+        "default"
+      ]
+    }
+  ]
+}

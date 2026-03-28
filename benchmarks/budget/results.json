@@ -1,0 +1,42 @@
+[
+  {
+    "budget": 500,
+    "avg_chunks": 14.6,
+    "avg_tokens": 499,
+    "precision": 0.1928,
+    "recall": 2.4417,
+    "truncation_rate": 1.0
+  },
+  {
+    "budget": 1000,
+    "avg_chunks": 25.3,
+    "avg_tokens": 999,
+    "precision": 0.1194,
+    "recall": 2.7917,
+    "truncation_rate": 1.0
+  },
+  {
+    "budget": 2000,
+    "avg_chunks": 52.1,
+    "avg_tokens": 1999,
+    "precision": 0.0692,
+    "recall": 3.2,
+    "truncation_rate": 1.0
+  },
+  {
+    "budget": 4000,
+    "avg_chunks": 108.7,
+    "avg_tokens": 3999,
+    "precision": 0.0441,
+    "recall": 4.1583,
+    "truncation_rate": 1.0
+  },
+  {
+    "budget": 8000,
+    "avg_chunks": 147.0,
+    "avg_tokens": 5512,
+    "precision": 0.0376,
+    "recall": 4.9167,
+    "truncation_rate": 0.0
+  }
+]
