@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-03-28
+
+### Added
+
+- Optional embedding-based relevance scoring (`ranking: embedding`)
+- `EmbeddingConfig` dataclass for embedding model/API configuration
+- `EmbeddingScorer` class with disk-cached document embeddings and batch scoring
+- New optional dependency group: `pip install theaios-context-router[embeddings]` (numpy + openai)
+- Benchmarks: 4-way comparison (keyword vs TF-IDF vs embeddings vs LLM judge)
+- Benchmarks: routing accuracy, permission enforcement (100%), budget efficiency
+
+### Changed
+
+- `VALID_RANKINGS` now includes `"embedding"` as a valid ranking strategy
+- Budget docs updated with embedding section, performance comparison table
+
 ## [0.1.0] - 2026-03-27
 
 ### Added
