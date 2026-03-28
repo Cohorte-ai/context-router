@@ -9,7 +9,7 @@
       "recall_at_3": 0.95,
       "mrr": 0.904,
       "ndcg_at_5": 0.915,
-      "avg_time_ms": 0.579,
+      "avg_time_ms": 0.666,
       "cost_per_query": 0.0
     },
     {
@@ -19,7 +19,7 @@
       "recall_at_3": 0.9167,
       "mrr": 0.8512,
       "ndcg_at_5": 0.8735,
-      "avg_time_ms": 9.329,
+      "avg_time_ms": 8.862,
       "cost_per_query": 0.0
     },
     {
@@ -29,17 +29,17 @@
       "recall_at_3": 0.9833,
       "mrr": 0.9722,
       "ndcg_at_5": 0.9719,
-      "avg_time_ms": 6127.136,
+      "avg_time_ms": 5931.112,
       "cost_per_query": 0.0002
     },
     {
       "name": "LLM (GPT-4.1-mini)",
       "precision_at_1": 0.9167,
-      "precision_at_3": 0.3389,
-      "recall_at_3": 0.9417,
-      "mrr": 0.9411,
-      "ndcg_at_5": 0.9317,
-      "avg_time_ms": 19436.263,
+      "precision_at_3": 0.3333,
+      "recall_at_3": 0.925,
+      "mrr": 0.9397,
+      "ndcg_at_5": 0.931,
+      "avg_time_ms": 20230.659,
       "cost_per_query": 0.002
     }
   ]

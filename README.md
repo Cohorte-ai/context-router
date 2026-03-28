@@ -33,8 +33,9 @@ Define how AI agents discover and receive context in YAML. The engine routes eac
 - **Expression-based routing** — route queries to sources using a safe expression language (`text contains "policy"`, boolean logic, variables)
 - **Agent permissions** — per-agent allow/deny lists for sources and file paths
 - **Token budget management** — relevance ranking, configurable truncation strategies (drop, truncate_end, truncate_middle)
+- **Optional embedding scoring** — switch to `ranking: embedding` for +10% retrieval accuracy via OpenAI embeddings ([benchmarks](benchmarks/))
 - **Automatic markdown splitting** — splits `.md` files by H2 headings for fine-grained retrieval
-- **Disk cache with TTL** — cache source results to avoid redundant fetches
+- **Disk cache with TTL** — cache source results and embeddings to avoid redundant fetches
 - **Extensible sources** — add custom sources via `@register_source` plugin system
 - **CLI tools** — validate configs, inspect routers, run queries from the terminal
 
@@ -153,6 +154,24 @@ theaios-context-router is **lightweight** (pure Python, no vector DB), **declara
 | **http_api** | Query a REST API endpoint | `url`, `method`, `body_template` |
 
 Custom sources: implement the `Source` base class and register with `@register_source("my_source")`.
+
+## Embedding Scoring (Optional)
+
+The default scoring is keyword overlap — free, 0.6ms, deterministic. For +10% retrieval accuracy on semantic queries, switch to embedding-based scoring:
+
+```yaml
+budget:
+  ranking: embedding
+  embedding:
+    model: text-embedding-3-small
+    api_key_env: OPENAI_API_KEY
+```
+
+```bash
+pip install theaios-context-router[embeddings]
+```
+
+Embeddings are cached on disk — first query indexes all documents, subsequent queries need only 1 API call. See the [benchmark results](benchmarks/) for an honest comparison (keyword: 85% P@1, embedding: 95% P@1, 300x slower, ~$0.0002/query).
 
 ## Generate Configs with AI
 

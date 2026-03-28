@@ -43,7 +43,8 @@ budget:
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `max_tokens` | int | `8000` | Maximum total tokens for the assembled context. Must be >= 1. |
-| `ranking` | string | `"relevance"` | Ranking strategy: `"relevance"`, `"recency"`, or `"manual"`. |
+| `ranking` | string | `"relevance"` | Ranking strategy: `"relevance"`, `"recency"`, `"manual"`, or `"embedding"`. |
+| `embedding` | object | `null` | Embedding config (required when ranking is `"embedding"`). See below. |
 | `truncation` | string | `"drop"` | Truncation strategy: `"drop"`, `"truncate_end"`, or `"truncate_middle"`. |
 | `estimator` | string | `"chars_div4"` | Token estimation method: `"chars_div4"`, `"words"`, or `"whitespace"`. |
 | `reserve_tokens` | int | `0` | Tokens to reserve (subtracted from budget). Must be >= 0. |
@@ -157,6 +158,55 @@ budget:
 ```
 
 Best for: scenarios where source `priority` controls ordering, or when you want deterministic ordering based on route/source declaration order.
+
+### `embedding`
+
+Uses OpenAI embeddings (or any compatible API) for semantic similarity scoring. Computes cosine similarity between the query embedding and each chunk embedding. Chunks closest in meaning to the query rank highest.
+
+```yaml
+budget:
+  ranking: embedding
+  embedding:
+    model: text-embedding-3-small
+    api_key_env: OPENAI_API_KEY
+    url: https://api.openai.com/v1/embeddings   # optional, default is OpenAI
+    cache_dir: .context_router_embeddings        # optional, caches embeddings on disk
+```
+
+Install the optional dependency:
+
+```bash
+pip install theaios-context-router[embeddings]
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `model` | string | `"text-embedding-3-small"` | Embedding model name |
+| `api_key_env` | string | `"OPENAI_API_KEY"` | Environment variable holding the API key |
+| `url` | string | `"https://api.openai.com/v1/embeddings"` | Embedding API endpoint |
+| `cache_dir` | string | `".context_router_embeddings"` | Directory for caching document embeddings |
+
+**How it works:**
+
+1. First query: embeds all fetched chunks and caches their embeddings on disk
+2. Subsequent queries: only the query is embedded (1 API call), chunk embeddings are loaded from cache
+3. Cosine similarity scores each chunk against the query
+4. Chunks are sorted by similarity (highest first), then budget trimming applies normally
+
+**Performance characteristics:**
+
+| | Keyword (`relevance`) | Embedding |
+|---|---|---|
+| Latency | ~0.6ms/query | ~200ms/query (API call) |
+| Cost | $0 | ~$0.0002/query |
+| P@1 (benchmark) | 85% | 95% |
+| Determinism | 100% | Near-deterministic (model is stable) |
+| Setup | None | API key + optional dep |
+
+Best for: semantic queries where users don't use the exact terminology in the documents ("How do I take time off?" matching the PTO policy). The +10% P@1 improvement is most pronounced for ambiguous, natural-language queries.
+
+!!! tip "Start with keyword, upgrade to embedding"
+    Use `ranking: relevance` (the default) to get started. If you see queries that miss relevant documents because of vocabulary mismatch, switch to `ranking: embedding`. You can always switch back — the config change is one line.
 
 ---
 

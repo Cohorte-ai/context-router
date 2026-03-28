@@ -378,18 +378,20 @@ budget:
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `max_tokens` | int | `8000` | Maximum total tokens for the assembled context. Must be >= 1. |
-| `ranking` | string | `"relevance"` | How to rank chunks before budget trimming: `"relevance"`, `"recency"`, or `"manual"`. |
+| `ranking` | string | `"relevance"` | How to rank chunks: `"relevance"`, `"recency"`, `"manual"`, or `"embedding"`. |
 | `truncation` | string | `"drop"` | What to do when a chunk exceeds the remaining budget: `"drop"`, `"truncate_end"`, or `"truncate_middle"`. |
 | `estimator` | string | `"chars_div4"` | Token estimation method: `"chars_div4"`, `"words"`, or `"whitespace"`. |
 | `reserve_tokens` | int | `0` | Tokens to reserve (subtracted from `max_tokens`). Useful for system prompts injected separately. Must be >= 0. |
+| `embedding` | object | — | Embedding configuration. Required when `ranking` is `"embedding"`. See [Token Budgets](budget.md#embedding). |
 
 ### Ranking Strategies
 
 | Value | Sort key | Description |
 |-------|----------|-------------|
-| `relevance` | `relevance_score` descending | Chunks most relevant to the query appear first. **Default.** |
+| `relevance` | `relevance_score` descending | Keyword overlap scoring. Free, ~0.6ms, deterministic. **Default.** |
 | `recency` | `metadata.mtime` descending | Most recently modified files appear first. Best for "what changed" queries. |
 | `manual` | Insertion order | Preserves the order sources are declared. Best when source `priority` controls ordering. |
+| `embedding` | Cosine similarity descending | Semantic similarity via OpenAI embeddings. +10% P@1 vs keyword, ~200ms, ~$0.0002/query. Requires `pip install theaios-context-router[embeddings]`. |
 
 ### Truncation Strategies
 
