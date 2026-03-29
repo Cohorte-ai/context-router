@@ -63,6 +63,7 @@ nav:
   - Reference:
       - CLI: cli.md
       - Python API: api-reference.md
+      - Security: security.md
 
 extra:
   social:

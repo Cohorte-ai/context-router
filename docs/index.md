@@ -120,6 +120,7 @@ context-router cache stats --config context-router.yaml
 | [CLI Reference](cli.md) | `context-router validate`, `inspect`, `query`, `cache stats`, `cache clear` |
 | [Python API](api-reference.md) | `Router`, `load_config`, `query`, all types, source registry |
 | [Generate Configs with AI](ai-config-generator.md) | Copy-paste prompts for any LLM to generate valid YAML configs |
+| [Security](security.md) | SSRF protection, command injection prevention, path traversal defense, atomic writes |
 
 ## Part of the theaios Ecosystem
 

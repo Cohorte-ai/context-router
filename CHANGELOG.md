@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-03-29
+
+### Security
+
+- **CRITICAL**: git_repo source — validate git refs and file paths against whitelist regex to prevent command injection
+- **CRITICAL**: directory source — defense-in-depth path traversal check (resolve + startswith base)
+- **CRITICAL**: http_api source — SSRF protection blocks private IPs, loopback, link-local, non-HTTP schemes
+- **HIGH**: cache — atomic writes via tempfile + rename to prevent corruption
+- **HIGH**: config — structural validation before env var interpolation to prevent secret leakage
+- **MEDIUM**: cache — JSON structure validation on load (type checks, skip malformed entries)
+
+### Added
+
+- Security documentation page (docs/security.md)
+- Security section in README with protection summary table
+- Security notes in source type docs (directory, git_repo, http_api)
+
 ## [0.2.0] - 2026-03-28
 
 ### Added

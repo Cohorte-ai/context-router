@@ -156,6 +156,12 @@ Each chunk includes:
 
 The chunk's `path` field is set to the relative path within the directory (e.g., `"guides/setup.md"`), which enables `deny_paths` filtering.
 
+### Security
+
+- **Path traversal protection**: every file path is resolved via `Path.resolve()` and verified to be inside the base directory. Symlink escapes are blocked.
+- **File size limit**: `max_file_size` (default 1MB) prevents reading very large files.
+- **Note**: the `path` config field can point to any directory the process has read access to. Restrict process permissions accordingly.
+
 ### Example: Multiple Directories with Different Patterns
 
 ```yaml
@@ -224,13 +230,18 @@ sources:
 |-----|------|-------------|
 | `ref` | string | The git ref used to read the file. |
 
+### Security
+
+- **Ref validation**: git refs are validated against `^[a-zA-Z0-9._/-]+$` before any subprocess call. Refs containing `;`, `$`, `` ` ``, or other shell metacharacters are rejected.
+- **Path validation**: file paths from `git ls-tree` are validated against a safe character set. Files with special characters in their names are skipped.
+- **No shell=True**: all subprocess calls use list syntax.
+- **Timeouts**: `git ls-tree` has a 30-second timeout, `git show` has a 10-second timeout.
+
 ### Requirements
 
 - `git` must be available on the system PATH
 - The path must be a valid git repository
 - The ref must exist
-- `git ls-tree` times out after 30 seconds
-- `git show` per file times out after 10 seconds
 
 ### Use Cases
 
@@ -340,11 +351,18 @@ If the response is not valid JSON, the entire response body is returned as a sin
 |-----|------|-------------|
 | `url` | string | The configured source URL (before template substitution). |
 
+### Security
+
+- **SSRF protection**: URLs are validated before every request. Private IPs (`127.0.0.1`, `10.x.x.x`, `172.16-31.x.x`, `192.168.x.x`), loopback, and link-local addresses are blocked. Only `http://` and `https://` schemes are allowed.
+- **Validation after template substitution**: the URL is validated after `{{query}}` replacement, preventing query-based SSRF bypasses.
+- **Timeout**: all requests have a 30-second timeout.
+
 ### Error Handling
 
 - HTTP errors (4xx, 5xx) result in zero chunks (no exception propagated)
 - Invalid URLs result in zero chunks
 - Timeouts (30 seconds) result in zero chunks
+- SSRF-blocked URLs result in zero chunks
 - For POST requests, `Content-Type: application/json` is set automatically if not provided in `headers`
 
 ### Example: Vector Search API

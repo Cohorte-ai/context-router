@@ -37,6 +37,7 @@ Define how AI agents discover and receive context in YAML. The engine routes eac
 - **Automatic markdown splitting** — splits `.md` files by H2 headings for fine-grained retrieval
 - **Disk cache with TTL** — cache source results and embeddings to avoid redundant fetches
 - **Extensible sources** — add custom sources via `@register_source` plugin system
+- **Security hardened** — SSRF protection, path traversal defense, command injection prevention, atomic writes
 - **CLI tools** — validate configs, inspect routers, run queries from the terminal
 
 ## Quick Start
@@ -187,6 +188,22 @@ Then validate: `context-router validate --config generated-config.yaml`
 ## Documentation
 
 Full documentation at **[cohorte-ai.github.io/context-router](https://cohorte-ai.github.io/context-router/)** — including the [configuration reference](https://cohorte-ai.github.io/context-router/config-syntax/), [source types](https://cohorte-ai.github.io/context-router/sources/), [expression language](https://cohorte-ai.github.io/context-router/expressions/), [permissions](https://cohorte-ai.github.io/context-router/permissions/), and [budget management](https://cohorte-ai.github.io/context-router/budget/).
+
+## Security
+
+The library is hardened against common attack vectors:
+
+| Threat | Protection |
+|--------|-----------|
+| **SSRF** (Server-Side Request Forgery) | HTTP API source blocks private IPs, loopback, link-local, non-HTTP schemes |
+| **Command injection** (git source) | Git refs and file paths validated against whitelist regex `^[a-zA-Z0-9._/-]+$` |
+| **Path traversal** (directory source) | Resolved paths verified against base directory; symlink escapes blocked |
+| **Cache corruption** | Atomic writes via tempfile + rename; JSON structure validated on load |
+| **ReDoS** | Expression parser uses a safe recursive descent parser — no `eval()`, no regex on user input |
+| **YAML deserialization** | `yaml.safe_load()` only — no arbitrary object instantiation |
+| **Env var leakage** | Config structure validated before environment variable interpolation |
+
+See the [Security](https://cohorte-ai.github.io/context-router/security/) documentation for details.
 
 ## Part of the theaios Ecosystem
 
