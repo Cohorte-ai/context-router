@@ -13,6 +13,22 @@ from theaios.context_router.types import ContextChunk, Query, SourceConfig
 
 _H2_SPLIT = re.compile(r"(?=^## )", re.MULTILINE)
 
+# Security: whitelist patterns to prevent command injection via git refs/paths
+_SAFE_REF_PATTERN = re.compile(r"^[a-zA-Z0-9._/\-]+$")
+_SAFE_PATH_PATTERN = re.compile(r"^[a-zA-Z0-9._/\- ]+$")
+
+
+def _validate_git_ref(ref: str) -> None:
+    """Validate a git ref against a safe whitelist pattern."""
+    if not _SAFE_REF_PATTERN.match(ref):
+        raise ValueError(f"Invalid git ref: {ref!r}")
+
+
+def _validate_file_path(path: str) -> None:
+    """Validate a file path from git ls-tree output against a safe pattern."""
+    if not _SAFE_PATH_PATTERN.match(path):
+        raise ValueError(f"Unsafe file path in git repo: {path!r}")
+
 
 def _matches_any(path: str, patterns: list[str]) -> bool:
     """Return True if path matches any of the glob patterns."""
@@ -62,6 +78,9 @@ def _read_git_repo(config: SourceConfig) -> list[ContextChunk]:
     repo_path = config.path
     ref = config.ref
 
+    # Security: validate git ref to prevent command injection
+    _validate_git_ref(ref)
+
     # List files in the git tree
     try:
         result = subprocess.run(
@@ -75,7 +94,17 @@ def _read_git_repo(config: SourceConfig) -> list[ContextChunk]:
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
         return []
 
-    file_paths = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    raw_paths = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+
+    # Security: validate all file paths from git ls-tree output
+    file_paths: list[str] = []
+    for fp in raw_paths:
+        try:
+            _validate_file_path(fp)
+            file_paths.append(fp)
+        except ValueError:
+            continue  # Skip files with unsafe paths
+
     chunks: list[ContextChunk] = []
 
     for file_path in file_paths:

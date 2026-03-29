@@ -78,6 +78,12 @@ def load_config(path: str = "context-router.yaml") -> RouterConfig:
     if not isinstance(raw, dict):
         raise ConfigError(["Config file must be a YAML mapping"])
 
+    # Security: parse and validate YAML structure BEFORE interpolating env vars.
+    # This ensures that malformed configs are rejected before any env var values
+    # are substituted, preventing env var contents from leaking in error messages.
+    config = _parse_config(raw)
+
+    # Now interpolate env vars on the raw dict and re-parse
     raw = _interpolate_recursive(raw)
     if not isinstance(raw, dict):
         raise ConfigError(["Config file must be a YAML mapping after interpolation"])

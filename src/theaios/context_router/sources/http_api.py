@@ -2,11 +2,34 @@
 
 from __future__ import annotations
 
+import ipaddress
+from urllib.parse import urlparse
+
 import httpx
 
 from theaios.context_router.budget import estimate_tokens
 from theaios.context_router.sources import Source, register_source
 from theaios.context_router.types import ContextChunk, Query, SourceConfig
+
+
+def _validate_url(url: str) -> None:
+    """Validate a URL to prevent SSRF attacks.
+
+    Rejects non-HTTP(S) schemes and private/internal IP addresses.
+    """
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"Only http/https URLs allowed, got: {parsed.scheme}")
+    hostname = parsed.hostname or ""
+    try:
+        ip = ipaddress.ip_address(hostname)
+        if ip.is_private or ip.is_loopback or ip.is_link_local:
+            raise ValueError(f"Private/internal IP addresses not allowed: {hostname}")
+    except ValueError as exc:
+        # Re-raise our own ValueError (SSRF block), but ignore parse errors
+        # (hostname is not an IP literal, which is fine)
+        if "not allowed" in str(exc):
+            raise
 
 
 def _navigate_path(data: object, path: str) -> object:
@@ -51,6 +74,9 @@ class HttpApiSource(Source):
 
         # Build request
         url = config.url.replace("{{query}}", query.text)
+
+        # Security: validate URL to prevent SSRF
+        _validate_url(url)
         headers = dict(config.headers)
 
         async with httpx.AsyncClient(timeout=30.0) as client:

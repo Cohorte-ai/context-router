@@ -75,6 +75,11 @@ def _read_directory(config: SourceConfig) -> list[ContextChunk]:
         if not file_path.is_file():
             continue
 
+        # Security: defense-in-depth check against path traversal (e.g. symlinks)
+        resolved = file_path.resolve()
+        if not str(resolved).startswith(str(base)):
+            continue  # Skip files outside base directory
+
         # Get relative path for matching
         rel_path = str(file_path.relative_to(base))
 

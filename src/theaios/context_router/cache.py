@@ -4,10 +4,14 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
+import tempfile
 import time
 from pathlib import Path
 
 from theaios.context_router.types import CacheConfig, ContextChunk
+
+_logger = logging.getLogger(__name__)
 
 
 class Cache:
@@ -71,15 +75,34 @@ class Cache:
             path.unlink(missing_ok=True)
             return None
 
+        # Validate top-level structure
+        if not isinstance(raw, dict):
+            _logger.warning("Cache entry %s is not a dict — removing", key)
+            path.unlink(missing_ok=True)
+            return None
+
         # Check TTL
         cached_at = raw.get("cached_at", 0)
+        if not isinstance(cached_at, (int, float)):
+            _logger.warning("Cache entry %s has invalid cached_at — removing", key)
+            path.unlink(missing_ok=True)
+            return None
         if time.time() - cached_at > self._config.ttl:
             path.unlink(missing_ok=True)
             return None
 
-        # Deserialize chunks
+        # Deserialize chunks with validation
+        chunks_raw = raw.get("chunks", [])
+        if not isinstance(chunks_raw, list):
+            _logger.warning("Cache entry %s has invalid chunks — removing", key)
+            path.unlink(missing_ok=True)
+            return None
+
         chunks: list[ContextChunk] = []
-        for item in raw.get("chunks", []):
+        for item in chunks_raw:
+            if not isinstance(item, dict):
+                _logger.warning("Skipping malformed chunk in cache entry %s", key)
+                continue
             chunks.append(
                 ContextChunk(
                     content=str(item.get("content", "")),
@@ -132,7 +155,13 @@ class Cache:
             ],
         }
 
-        path.write_text(json.dumps(serialized, default=str), encoding="utf-8")
+        # Atomic write: write to temp file then rename to prevent corruption
+        with tempfile.NamedTemporaryFile(
+            dir=self._dir, mode="w", encoding="utf-8", suffix=".tmp", delete=False
+        ) as f:
+            f.write(json.dumps(serialized, default=str))
+            temp_path = Path(f.name)
+        temp_path.replace(path)
 
     def invalidate(self, source: str | None = None) -> int:
         """Remove cache entries.
