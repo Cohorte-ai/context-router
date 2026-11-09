@@ -407,8 +407,17 @@ def shape_errors(raw: dict[object, object]) -> list[str]:
     return errors
 
 
+# Keys from a neighbouring library or a common guess, mapped to the right key here. Checked
+# before fuzzy matching, which can suggest something harmful (`condition` -> `description`
+# would leave a rule with no condition, matching everything).
+_ALIASES = {"condition": "when", "if": "when", "source": "sources"}
+
+
 def _did_you_mean(name: str, known: Iterable[str]) -> str:
-    close = difflib.get_close_matches(name, list(known), n=1)
+    options = list(known)
+    if _ALIASES.get(name) in options:
+        return f" (did you mean '{_ALIASES[name]}'?)"
+    close = difflib.get_close_matches(name, options, n=1)
     return f" (did you mean '{close[0]}'?)" if close else ""
 
 

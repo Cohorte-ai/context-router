@@ -142,3 +142,8 @@ def test_deny_paths_hide_a_top_level_folder(tmp_path: Path) -> None:
     texts = " ".join(c.content for c in response.chunks)
     assert "welcome handbook" in texts  # top-level file reached by the default **/*
     assert "secret salary table" not in texts
+
+
+def test_condition_key_suggests_when(tmp_path: Path) -> None:
+    errors = _errors(tmp_path, ROUTE.replace("when:", "condition:"))
+    assert "unknown key 'condition' (did you mean 'when'?)" in errors
