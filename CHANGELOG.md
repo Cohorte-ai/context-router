@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2026-11-09
+
+### Fixed
+
+- A route whose `when` used an undefined `$variable` (a typo) or `matches` (the context router has no matchers) loaded fine and then never matched, silently. Such configs are now rejected when they load (`load_config`, `Router(...)`, the CLI), with a "did you mean" suggestion. Disabled routes are not checked. **If your config stops loading after upgrading, it had a route that never matched.**
+- The docs described `matches` as resolving named matchers in the router; it never did. Corrected.
+
+- Mistakes in a config's structure no longer load silently: unknown keys (`enabeld: false` left a route on; a misspelled top-level section was dropped), sections of the wrong type (`routes` written as a mapping loaded zero routes), and values of the wrong type (`when: 42` matched every query; `enabled: "false"` in quotes left the route on). They are rejected with a suggestion where one exists.
+- `Router(...)` built from a `RouterConfig` in code now runs the same validation as `load_config` and raises `ConfigError`.
+- YAML syntax errors, a directory or a non-UTF-8 file passed as the config raise `ConfigError` with the file and line instead of a Python traceback.
+- String values that spell numbers compare as numbers in route conditions (theaios-core 0.1.1).
+- Docs: the validator lists and the variables section now match the behavior.
+- **Security:** `deny_paths: ["**/secrets/**"]` did not hide a `secrets/` folder at the top of a source, so an agent denied those files still received them. In path patterns, `**/` now also matches zero folders. This applies to `deny_paths`, `patterns` and `exclude_patterns`: the default `patterns: ["**/*"]` now includes top-level files (it skipped them), and `docs/**/*.md` includes files directly in `docs/`.
+- **Security:** query `metadata` could override the query's own fields in route conditions: `metadata={"agent": "hr-bot"}` sent by an intern matched `agent == "hr-bot"`. `text`, `agent` and `tags` now always win; metadata keys stay reachable at the top level and, as `metadata.key`, also in the documented nested form.
+- `context-router inspect` and `query` printed text in square brackets as terminal markup (names, conditions and chunk content could disappear); all text is now shown verbatim.
+- `examples/permissions_example.py` said an unknown agent is "denied by default" while it received every source; it now adds the catch-all `agent: "*"` deny rule that produces that result.
+- Custom source types registered with `@register_source` are accepted by validation (they were rejected unless built in code, and the new in-code validation briefly rejected those too).
+- `matched_routes` in the README quick start is in declaration order.
+
+### Changed
+
+- Requires theaios-core 0.1.1 or later.
+
 ## [0.2.3] - 2026-11-09
 
 ### Changed

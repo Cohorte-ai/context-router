@@ -60,6 +60,8 @@ The validator checks:
 - `budget.truncation` is one of `drop`, `truncate_end`, `truncate_middle`
 - `budget.estimator` is one of `chars_div4`, `words`, `whitespace`
 - `budget.reserve_tokens` >= 0
+- No unknown keys (a typo such as `enabeld:` or `rout:`), every section has the right type (`routes` and `permissions` are lists), and values have the right type (`when` is a string, `enabled` is `true`/`false` unquoted)
+- Every enabled route's `when` parses, uses only defined `$variables`, and does not use `matches` (the router has no matchers)
 - `cache.ttl` >= 0
 - `cache.max_entries` >= 1
 

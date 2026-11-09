@@ -88,9 +88,9 @@ router = Router(config)
 
 response = router.query(Query(text="What is the remote work policy?"))
 
-print(response.matched_routes)  # ["policy-questions", "default"]
-print(len(response.chunks))     # 3
-print(response.total_tokens)    # 847
+print(response.matched_routes)  # ["default", "policy-questions"]  (declaration order)
+print(len(response.chunks))     # depends on the files in ./data
+print(response.total_tokens)    # always <= 4000, the budget
 ```
 
 **Queries** tell the engine what context to find. Each query has a `text` (what to search for), an `agent` (who is asking), and optional `tags` and `metadata`:

@@ -74,7 +74,7 @@ On construction, the router:
 
 This work happens once. Subsequent `query()` calls are pure computation + I/O.
 
-**Raises:** `ExpressionError` if any route's `when` expression has a syntax error.
+**Raises:** `ExpressionError` if any route's `when` expression has a syntax error; `ConfigError` if the config fails the same validation `load_config` runs (undefined sources or variables, invalid values).
 
 ### `router.query(q) -> ContextResponse`
 

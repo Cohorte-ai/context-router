@@ -152,7 +152,7 @@ routes:
   - when: "text contains $search_keyword"   # string variable
 ```
 
-Variables are prefixed with `$`. If a variable doesn't exist, the engine raises an `ExpressionError` at evaluation time -- this is intentional, to catch typos early.
+Variables are prefixed with `$`. A route that uses an undefined variable is rejected when the config loads (see [Undefined variables](#undefined-variables)), so a typo cannot silently stop a route from matching.
 
 ### Literals
 
@@ -173,7 +173,7 @@ From lowest to highest:
 1. `or`
 2. `and`
 3. `not`
-4. Comparisons (`==`, `!=`, `>`, `<`, `>=`, `<=`, `in`, `not in`, `contains`, `starts_with`, `ends_with`, `matches`)
+4. Comparisons (`==`, `!=`, `>`, `<`, `>=`, `<=`, `in`, `not in`, `contains`, `starts_with`, `ends_with`; `matches` is in the grammar but not available in the router)
 
 Use parentheses to override precedence:
 
@@ -204,13 +204,15 @@ routes:
 
 ## The `matches` Operator
 
-The `matches` operator is supported in the expression grammar for forward compatibility with matcher-based pattern matching (as used in theaios-guardrails). In the context router, it evaluates against named matchers if provided:
+`matches` is part of the shared grammar (theaios-guardrails uses it with named matchers), but the
+context router defines no matchers. A route whose `when` uses `matches` is rejected when the
+config loads.
 
-```yaml
-when: "text matches prompt_injection"
-```
+## Undefined variables
 
-The right side of `matches` is a matcher name, not a regular expression. Matchers are resolved through the matcher registry at evaluation time.
+A route whose `when` uses an undefined `$variable` (usually a typo) is rejected when the config
+loads, by `load_config`, `Router(...)` and the CLI, with a suggestion when a close name
+exists. Disabled routes are not checked. Before 0.2.4 such a route was silently never matched.
 
 ---
 

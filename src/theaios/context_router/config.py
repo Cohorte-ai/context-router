@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+import difflib
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 
 import yaml
+from theaios.core.expressions import ExpressionError, compile_expression, references
 from theaios.core.env import interpolate_env, interpolate_recursive
 
 from theaios.context_router.types import (
     VALID_DEFAULT_PERMISSIONS,
     VALID_RANKINGS,
-    VALID_SOURCE_TYPES,
     VALID_TOKEN_ESTIMATORS,
     VALID_TRUNCATIONS,
     BudgetConfig,
@@ -53,11 +55,25 @@ def load_config(path: str = "context-router.yaml") -> RouterConfig:
     if not config_path.exists():
         raise FileNotFoundError(f"Config file not found: {path}")
 
-    with open(config_path) as f:
-        raw = yaml.safe_load(f)
+    if not config_path.is_file():
+        raise ConfigError([f"{path} is not a file"])
+    try:
+        with open(config_path, encoding="utf-8") as f:
+            raw = yaml.safe_load(f)
+    except yaml.YAMLError as exc:
+        mark = getattr(exc, "problem_mark", None)
+        where = f"{path}:{mark.line + 1}" if mark is not None else path
+        problem = getattr(exc, "problem", None) or str(exc)
+        raise ConfigError([f"{where}: YAML syntax error: {problem}"]) from None
+    except UnicodeDecodeError:
+        raise ConfigError([f"{path} is not UTF-8 text"]) from None
 
     if not isinstance(raw, dict):
         raise ConfigError(["Config file must be a YAML mapping"])
+
+    errors = shape_errors(raw)
+    if errors:
+        raise ConfigError(errors)
 
     # Security: parse and validate YAML structure BEFORE interpolating env vars.
     # This ensures that malformed configs are rejected before any env var values
@@ -261,6 +277,171 @@ def _parse_config(raw: dict[str, object]) -> RouterConfig:
 # ---------------------------------------------------------------------------
 
 
+# Every key the parser reads, per place in the file. Anything else is a typo and used to be
+# dropped without a word.
+_STR, _INT, _BOOL = "a string", "an integer", "true or false (unquoted)"
+_STRLIST, _MAP = "a list of strings", "a mapping"
+_TOP_KEYS = {
+    "version",
+    "metadata",
+    "variables",
+    "sources",
+    "routes",
+    "permissions",
+    "budget",
+    "cache",
+}
+_SOURCE = {
+    "type": _STR,
+    "enabled": _BOOL,
+    "description": _STR,
+    "path": _STR,
+    "content": _STR,
+    "url": _STR,
+    "ref": _STR,
+    "method": _STR,
+    "headers": _MAP,
+    "body_template": _STR,
+    "response_path": _STR,
+    "result_text_field": _STR,
+    "result_title_field": _STR,
+    "patterns": _STRLIST,
+    "exclude_patterns": _STRLIST,
+    "recursive": _BOOL,
+    "encoding": _STR,
+    "max_file_size": _INT,
+    "tags": _STRLIST,
+    "priority": _INT,
+}
+_ROUTE = {
+    "name": _STR,
+    "when": _STR,
+    "sources": _STRLIST,
+    "description": _STR,
+    "enabled": _BOOL,
+    "tags": _STRLIST,
+}
+_PERMISSION = {
+    "agent": _STR,
+    "allow_sources": _STRLIST,
+    "deny_sources": _STRLIST,
+    "deny_paths": _STRLIST,
+    "default": _STR,
+}
+_BUDGET = {
+    "max_tokens": _INT,
+    "ranking": _STR,
+    "truncation": _STR,
+    "estimator": _STR,
+    "reserve_tokens": _INT,
+    "embedding": _MAP,
+}
+_EMBEDDING = {"model": _STR, "api_key_env": _STR, "url": _STR, "cache_dir": _STR}
+_CACHE = {"enabled": _BOOL, "directory": _STR, "ttl": _INT, "max_entries": _INT}
+
+
+def _type_ok(value: object, kind: str) -> bool:
+    if kind == _STR:
+        return isinstance(value, str)
+    if kind == _INT:
+        return isinstance(value, int) and not isinstance(value, bool)
+    if kind == _BOOL:
+        return isinstance(value, bool)
+    if kind == _MAP:
+        return isinstance(value, dict)
+    return isinstance(value, list) and all(isinstance(x, str) for x in value)
+
+
+def _check_mapping(where: str, raw: object, spec: Mapping[str, str]) -> list[str]:
+    if not isinstance(raw, dict):
+        return [f"{where}: must be a mapping, got {type(raw).__name__}"]
+    errors = []
+    for key, value in raw.items():
+        if key not in spec:
+            errors.append(f"{where}: unknown key '{key}'{_did_you_mean(str(key), spec)}")
+        elif value is not None and not _type_ok(value, spec[key]):
+            errors.append(f"{where}: '{key}' must be {spec[key]}, got {type(value).__name__}")
+    return errors
+
+
+def _check_list(where: str, raw: object, spec: Mapping[str, str]) -> list[str]:
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        return [
+            f"'{where}' must be a list (each entry starting with '-'), got {type(raw).__name__}"
+        ]
+    errors = []
+    for i, entry in enumerate(raw):
+        label = f"{where}[{i}]"
+        if isinstance(entry, dict) and "name" in entry:
+            label += f" ({entry['name']})"
+        errors += _check_mapping(label, entry, spec)
+    return errors
+
+
+def shape_errors(raw: dict[object, object]) -> list[str]:
+    """Structural problems that parsing would otherwise hide: unknown keys, sections of the
+    wrong type (``routes`` written as a mapping loaded zero routes), values of the wrong type
+    (``when: 42`` matched every query, ``enabled: "false"`` left a route on)."""
+    errors = [
+        f"config: unknown key '{key}'{_did_you_mean(str(key), _TOP_KEYS)}"
+        for key in raw
+        if key not in _TOP_KEYS
+    ]
+    for key in ("metadata", "variables", "sources", "budget", "cache"):
+        if raw.get(key) is not None and not isinstance(raw[key], dict):
+            errors.append(f"'{key}' must be a mapping, got {type(raw[key]).__name__}")
+    sources = raw.get("sources")
+    for name, source in sources.items() if isinstance(sources, dict) else []:
+        errors += _check_mapping(f"sources.{name}", source, _SOURCE)
+    errors += _check_list("routes", raw.get("routes"), _ROUTE)
+    errors += _check_list("permissions", raw.get("permissions"), _PERMISSION)
+    budget = raw.get("budget")
+    if isinstance(budget, dict):
+        errors += _check_mapping("budget", budget, _BUDGET)
+        if isinstance(budget.get("embedding"), dict):
+            errors += _check_mapping("budget.embedding", budget["embedding"], _EMBEDDING)
+    if isinstance(raw.get("cache"), dict):
+        errors += _check_mapping("cache", raw["cache"], _CACHE)
+    return errors
+
+
+# Keys from a neighbouring library or a common guess, mapped to the right key here. Checked
+# before fuzzy matching, which can suggest something harmful (`condition` -> `description`
+# would leave a rule with no condition, matching everything).
+_ALIASES = {"condition": "when", "if": "when", "source": "sources"}
+
+
+def _did_you_mean(name: str, known: Iterable[str]) -> str:
+    options = list(known)
+    if _ALIASES.get(name) in options:
+        return f" (did you mean '{_ALIASES[name]}'?)"
+    close = difflib.get_close_matches(name, options, n=1)
+    return f" (did you mean '{close[0]}'?)" if close else ""
+
+
+def when_errors(when: str, variables: Iterable[str]) -> list[str]:
+    """Problems in a route's ``when``: a syntax error, an undefined ``$variable``, or
+    ``matches`` (context-router has no matchers). Each would make the route never match."""
+    if not isinstance(when, str):
+        return [f"'when' must be a string, got {type(when).__name__}"]
+    try:
+        refs = references(compile_expression(when))
+    except ExpressionError as exc:
+        return [f"invalid 'when': {exc}"]
+    known = set(variables)
+    errors = [
+        f"'when' uses undefined variable '${name}'{_did_you_mean(name, known)}"
+        for name in sorted(refs.variables - known)
+    ]
+    errors += [
+        f"'when' uses 'matches {name}', but context-router has no matchers"
+        for name in sorted(refs.matchers)
+    ]
+    return errors
+
+
 def validate_config(config: RouterConfig) -> list[str]:
     """Return list of validation errors (empty = valid)."""
     errors: list[str] = []
@@ -269,16 +450,21 @@ def validate_config(config: RouterConfig) -> list[str]:
     if config.version not in ("1.0",):
         errors.append(f"Unsupported config version: '{config.version}' (expected '1.0')")
 
-    # Sources
+    # Sources: built-in types, or custom types registered with @register_source.
+    from theaios.context_router.sources import list_sources
+
+    source_types = set(list_sources())
     for name, source in config.sources.items():
         prefix = f"sources.{name}"
 
         if not source.type:
             errors.append(f"{prefix}: 'type' is required")
-        elif source.type not in VALID_SOURCE_TYPES:
+        elif source.type not in source_types:
             errors.append(
-                f"{prefix}: invalid type '{source.type}', "
-                f"expected one of {sorted(VALID_SOURCE_TYPES)}"
+                f"{prefix}: invalid type '{source.type}'"
+                f"{_did_you_mean(source.type, source_types)}, expected one of "
+                f"{sorted(source_types)} or a type registered with @register_source before "
+                "loading"
             )
 
         if source.type == "inline" and not source.content:
@@ -308,6 +494,11 @@ def validate_config(config: RouterConfig) -> list[str]:
 
         if not route.sources:
             errors.append(f"{prefix} ({route.name}): at least one source is required")
+
+        if route.enabled:
+            errors.extend(
+                f"{prefix} ({route.name}): {e}" for e in when_errors(route.when, config.variables)
+            )
 
         for sname in route.sources:
             if sname not in source_names:
