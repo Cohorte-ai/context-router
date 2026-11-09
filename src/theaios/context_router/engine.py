@@ -16,7 +16,7 @@ from theaios.context_router.budget import (
     score_relevance,
 )
 from theaios.context_router.cache import Cache
-from theaios.context_router.config import when_errors
+from theaios.context_router.config import ConfigError, validate_config
 from theaios.context_router.expressions import (
     ASTNode,
     ExpressionError,
@@ -52,6 +52,10 @@ class Router:
     """
 
     def __init__(self, config: RouterConfig) -> None:
+        # Same checks as load_config, so a config built in code cannot skip them.
+        errors = validate_config(config)
+        if errors:
+            raise ConfigError(errors)
         self._config = config
 
         # Compile route expressions
@@ -65,9 +69,6 @@ class Router:
                 raise ExpressionError(
                     f"Error in route '{route.name}': {e}",
                 ) from e
-            problems = when_errors(route.when, config.variables)
-            if problems:
-                raise ExpressionError(f"Error in route '{route.name}': {'; '.join(problems)}")
             self._compiled_routes.append((route.name, route.sources, ast))
 
         # Instantiate source implementations

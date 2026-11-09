@@ -152,7 +152,7 @@ routes:
   - when: "text contains $search_keyword"   # string variable
 ```
 
-Variables are prefixed with `$`. If a variable doesn't exist, the engine raises an `ExpressionError` at evaluation time -- this is intentional, to catch typos early.
+Variables are prefixed with `$`. A route that uses an undefined variable is rejected when the config loads (see [Undefined variables](#undefined-variables)), so a typo cannot silently stop a route from matching.
 
 ### Literals
 
@@ -173,7 +173,7 @@ From lowest to highest:
 1. `or`
 2. `and`
 3. `not`
-4. Comparisons (`==`, `!=`, `>`, `<`, `>=`, `<=`, `in`, `not in`, `contains`, `starts_with`, `ends_with`, `matches`)
+4. Comparisons (`==`, `!=`, `>`, `<`, `>=`, `<=`, `in`, `not in`, `contains`, `starts_with`, `ends_with`; `matches` is in the grammar but not available in the router)
 
 Use parentheses to override precedence:
 

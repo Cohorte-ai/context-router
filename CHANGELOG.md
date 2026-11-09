@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A route whose `when` used an undefined `$variable` (a typo) or `matches` (the context router has no matchers) loaded fine and then never matched, silently. Such configs are now rejected when they load (`load_config`, `Router(...)`, the CLI), with a "did you mean" suggestion. Disabled routes are not checked. **If your config stops loading after upgrading, it had a route that never matched.**
 - The docs described `matches` as resolving named matchers in the router; it never did. Corrected.
 
+- Mistakes in a config's structure no longer load silently: unknown keys (`enabeld: false` left a route on; a misspelled top-level section was dropped), sections of the wrong type (`routes` written as a mapping loaded zero routes), and values of the wrong type (`when: 42` matched every query; `enabled: "false"` in quotes left the route on). They are rejected with a suggestion where one exists.
+- `Router(...)` built from a `RouterConfig` in code now runs the same validation as `load_config` and raises `ConfigError`.
+- YAML syntax errors, a directory or a non-UTF-8 file passed as the config raise `ConfigError` with the file and line instead of a Python traceback.
+- String values that spell numbers compare as numbers in route conditions (theaios-core 0.1.1).
+- Docs: the validator lists and the variables section now match the behavior.
+
 ### Changed
 
 - Requires theaios-core 0.1.1 or later.

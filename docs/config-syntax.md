@@ -657,6 +657,8 @@ The validator checks:
 - Permission rules reference defined sources
 - Budget values are within valid ranges
 - Cache values are within valid ranges
+- No unknown keys (a typo such as `enabeld:` or `rout:`), every section has the right type (`routes` and `permissions` are lists), and values have the right type (`when` is a string, `enabled` is `true`/`false` unquoted)
+- Every enabled route's `when` parses, uses only defined `$variables`, and does not use `matches` (the router has no matchers)
 
 If validation fails, the error output includes the specific field and reason:
 

@@ -8,7 +8,6 @@ import pytest
 
 from theaios.context_router.config import ConfigError, load_config, validate_config
 from theaios.context_router.engine import Router
-from theaios.context_router.expressions import ExpressionError
 from theaios.context_router.types import RouteConfig, RouterConfig, SourceConfig
 
 CONFIG = """
@@ -48,7 +47,7 @@ def test_load_rejects_undefined_variable_and_matches(tmp_path: Path) -> None:
 
 
 def test_router_built_in_code_rejects_undefined_variable() -> None:
-    with pytest.raises(ExpressionError, match="engineering_team"):
+    with pytest.raises(ConfigError, match="engineering_team"):
         Router(_config("agent in $engineering_team"))
 
 
