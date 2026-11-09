@@ -13,7 +13,6 @@ from theaios.core.env import interpolate_env, interpolate_recursive
 from theaios.context_router.types import (
     VALID_DEFAULT_PERMISSIONS,
     VALID_RANKINGS,
-    VALID_SOURCE_TYPES,
     VALID_TOKEN_ESTIMATORS,
     VALID_TRUNCATIONS,
     BudgetConfig,
@@ -442,16 +441,21 @@ def validate_config(config: RouterConfig) -> list[str]:
     if config.version not in ("1.0",):
         errors.append(f"Unsupported config version: '{config.version}' (expected '1.0')")
 
-    # Sources
+    # Sources: built-in types, or custom types registered with @register_source.
+    from theaios.context_router.sources import list_sources
+
+    source_types = set(list_sources())
     for name, source in config.sources.items():
         prefix = f"sources.{name}"
 
         if not source.type:
             errors.append(f"{prefix}: 'type' is required")
-        elif source.type not in VALID_SOURCE_TYPES:
+        elif source.type not in source_types:
             errors.append(
-                f"{prefix}: invalid type '{source.type}', "
-                f"expected one of {sorted(VALID_SOURCE_TYPES)}"
+                f"{prefix}: invalid type '{source.type}'"
+                f"{_did_you_mean(source.type, source_types)}, expected one of "
+                f"{sorted(source_types)} or a type registered with @register_source before "
+                "loading"
             )
 
         if source.type == "inline" and not source.content:

@@ -96,12 +96,15 @@ For each source that the route matching stage identified:
 
 After chunks are fetched from allowed sources, each chunk's `path` field is checked against `deny_paths` patterns. Chunks matching any pattern are removed.
 
-Path patterns use `fnmatch` glob syntax:
+Path patterns use `fnmatch` glob syntax, where `*` also matches `/`, plus one rule: `**/` also
+matches zero folders, so `**/secrets/**` covers a `secrets/` folder at the top of the source as
+well as deeper ones. The same patterns apply to a directory source's `patterns` and
+`exclude_patterns`.
 
 | Pattern | Matches |
 |---------|---------|
-| `**/secrets/**` | Any file inside a `secrets/` directory at any depth |
-| `*.env` | Files ending in `.env` in the root |
+| `**/secrets/**` | Any file inside a `secrets/` directory at any depth, including the top |
+| `*.env` | Files ending in `.env`, at any depth (`*` crosses `/`) |
 | `config/credentials.*` | Any credentials file in the config directory |
 | `**/internal/*.md` | Markdown files in any `internal/` directory |
 

@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - YAML syntax errors, a directory or a non-UTF-8 file passed as the config raise `ConfigError` with the file and line instead of a Python traceback.
 - String values that spell numbers compare as numbers in route conditions (theaios-core 0.1.1).
 - Docs: the validator lists and the variables section now match the behavior.
+- **Security:** `deny_paths: ["**/secrets/**"]` did not hide a `secrets/` folder at the top of a source, so an agent denied those files still received them. In path patterns, `**/` now also matches zero folders. This applies to `deny_paths`, `patterns` and `exclude_patterns`: the default `patterns: ["**/*"]` now includes top-level files (it skipped them), and `docs/**/*.md` includes files directly in `docs/`.
+- Custom source types registered with `@register_source` are accepted by validation (they were rejected unless built in code, and the new in-code validation briefly rejected those too).
+- `matched_routes` in the README quick start is in declaration order.
 
 ### Changed
 

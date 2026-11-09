@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-import fnmatch
 import re
 import subprocess
 
 from theaios.context_router.budget import estimate_tokens
+from theaios.context_router.paths import matches_any
 from theaios.context_router.sources import Source, register_source
 from theaios.context_router.types import ContextChunk, Query, SourceConfig
 
@@ -32,10 +32,7 @@ def _validate_file_path(path: str) -> None:
 
 def _matches_any(path: str, patterns: list[str]) -> bool:
     """Return True if path matches any of the glob patterns."""
-    for pat in patterns:
-        if fnmatch.fnmatch(path, pat):
-            return True
-    return False
+    return matches_any(path, patterns)
 
 
 def _split_markdown_git(

@@ -76,3 +76,69 @@ def test_router_built_in_code_is_validated() -> None:
     )
     with pytest.raises(ConfigError, match="source 'missing' is not defined"):
         Router(config)
+
+
+# --- Re-verification findings ------------------------------------------------------------
+
+
+def test_custom_source_type_registered_in_code_is_accepted() -> None:
+    from theaios.context_router.sources import Source, register_source
+    from theaios.context_router.types import ContextChunk, Query
+
+    @register_source("ux_test_dictionary")
+    class _Dictionary(Source):
+        async def fetch(self, query: Query, config: SourceConfig) -> list[ContextChunk]:
+            return [
+                ContextChunk(content="OKR means objectives and key results", source=config.name)
+            ]
+
+    config = RouterConfig(
+        sources={"glossary": SourceConfig(name="glossary", type="ux_test_dictionary")},
+        routes=[RouteConfig(name="r", when="", sources=["glossary"])],
+    )
+    response = Router(config).query(Query(text="okr"))
+    assert response.chunks
+
+
+def test_unregistered_source_type_suggests_registering() -> None:
+    config = RouterConfig(
+        sources={"g": SourceConfig(name="g", type="redis")},
+        routes=[RouteConfig(name="r", when="", sources=["g"])],
+    )
+    with pytest.raises(ConfigError, match="registered with @register_source"):
+        Router(config)
+
+
+@pytest.mark.parametrize(
+    ("path", "pattern", "expected"),
+    [
+        ("confidential/salaries.txt", "**/confidential/**", True),
+        ("hr/confidential/salaries.txt", "**/confidential/**", True),
+        ("notconfidential/a.txt", "**/confidential/**", False),
+        ("policy.md", "**/*.md", True),
+        ("docs/a.md", "docs/**/*.md", True),
+        ("docs/x/a.md", "docs/**/*.md", True),
+        ("public/a.txt", "**/secrets/**", False),
+    ],
+)
+def test_double_star_slash_matches_zero_folders(path: str, pattern: str, expected: bool) -> None:
+    from theaios.context_router.paths import path_matches
+
+    assert path_matches(path, pattern) is expected
+
+
+def test_deny_paths_hide_a_top_level_folder(tmp_path: Path) -> None:
+    from theaios.context_router.types import PermissionConfig, Query
+
+    (tmp_path / "confidential").mkdir()
+    (tmp_path / "confidential" / "salaries.txt").write_text("secret salary table")
+    (tmp_path / "handbook.txt").write_text("welcome handbook")
+    config = RouterConfig(
+        sources={"docs": SourceConfig(name="docs", type="directory", path=str(tmp_path))},
+        routes=[RouteConfig(name="r", when="", sources=["docs"])],
+        permissions=[PermissionConfig(agent="intern", deny_paths=["**/confidential/**"])],
+    )
+    response = Router(config).query(Query(text="salary handbook", agent="intern"))
+    texts = " ".join(c.content for c in response.chunks)
+    assert "welcome handbook" in texts  # top-level file reached by the default **/*
+    assert "secret salary table" not in texts

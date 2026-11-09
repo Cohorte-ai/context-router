@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import fnmatch
 from dataclasses import dataclass, field
 
+from theaios.context_router.paths import path_matches
 from theaios.context_router.types import ContextChunk, PermissionConfig, SourceConfig
 
 
@@ -153,7 +153,7 @@ def filter_by_path(
 
         is_denied = False
         for pattern in deny_paths:
-            if fnmatch.fnmatch(chunk.path, pattern):
+            if path_matches(chunk.path, pattern):
                 is_denied = True
                 break
 
