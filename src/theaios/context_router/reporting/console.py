@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from rich.console import Console
+from rich.markup import escape
 from rich.panel import Panel
 from rich.table import Table
 
@@ -14,12 +15,12 @@ console = Console()
 def print_router_summary(config: RouterConfig) -> None:
     """Print a formatted summary of a router configuration."""
     if config.metadata.name:
-        console.print(f"\n[bold]{config.metadata.name}[/bold]")
+        console.print(f"\n[bold]{escape(config.metadata.name)}[/bold]")
     if config.metadata.description:
-        console.print(f"  {config.metadata.description}")
+        console.print(f"  {escape(config.metadata.description)}")
     console.print(f"  Version: {config.version}")
     if config.metadata.author:
-        console.print(f"  Author: {config.metadata.author}")
+        console.print(f"  Author: {escape(config.metadata.author)}")
 
     # Sources
     if config.sources:
@@ -38,11 +39,11 @@ def print_router_summary(config: RouterConfig) -> None:
                 "http_api": "magenta",
             }.get(source.type, "white")
             table.add_row(
-                name,
-                f"[{type_color}]{source.type}[/{type_color}]",
+                escape(name),
+                f"[{type_color}]{escape(source.type)}[/{type_color}]",
                 "[green]yes[/green]" if source.enabled else "[red]no[/red]",
                 str(source.priority),
-                ", ".join(source.tags) or "-",
+                escape(", ".join(source.tags)) or "-",
             )
         console.print(table)
 
@@ -56,9 +57,9 @@ def print_router_summary(config: RouterConfig) -> None:
         table.add_column("Enabled")
         for route in config.routes:
             table.add_row(
-                route.name,
-                route.when or "[dim]always[/dim]",
-                ", ".join(route.sources),
+                escape(route.name),
+                escape(route.when) or "[dim]always[/dim]",
+                escape(", ".join(route.sources)),
                 "[green]yes[/green]" if route.enabled else "[red]no[/red]",
             )
         console.print(table)
@@ -75,11 +76,11 @@ def print_router_summary(config: RouterConfig) -> None:
         for perm in config.permissions:
             default_color = "green" if perm.default == "allow" else "red"
             table.add_row(
-                perm.agent,
-                ", ".join(perm.allow_sources) or "-",
-                ", ".join(perm.deny_sources) or "-",
-                ", ".join(perm.deny_paths) or "-",
-                f"[{default_color}]{perm.default}[/{default_color}]",
+                escape(perm.agent),
+                escape(", ".join(perm.allow_sources)) or "-",
+                escape(", ".join(perm.deny_sources)) or "-",
+                escape(", ".join(perm.deny_paths)) or "-",
+                f"[{default_color}]{escape(perm.default)}[/{default_color}]",
             )
         console.print(table)
 
@@ -89,9 +90,9 @@ def print_router_summary(config: RouterConfig) -> None:
     budget_table.add_column("Setting", style="dim")
     budget_table.add_column("Value")
     budget_table.add_row("Max Tokens", str(config.budget.max_tokens))
-    budget_table.add_row("Ranking", config.budget.ranking)
-    budget_table.add_row("Truncation", config.budget.truncation)
-    budget_table.add_row("Estimator", config.budget.estimator)
+    budget_table.add_row("Ranking", escape(config.budget.ranking))
+    budget_table.add_row("Truncation", escape(config.budget.truncation))
+    budget_table.add_row("Estimator", escape(config.budget.estimator))
     budget_table.add_row("Reserve Tokens", str(config.budget.reserve_tokens))
     console.print(budget_table)
 
@@ -100,7 +101,7 @@ def print_router_summary(config: RouterConfig) -> None:
     cache_status = "[green]enabled[/green]" if config.cache.enabled else "[dim]disabled[/dim]"
     console.print(f"  Status: {cache_status}")
     if config.cache.enabled:
-        console.print(f"  Directory: {config.cache.directory}")
+        console.print(f"  Directory: {escape(config.cache.directory)}")
         console.print(f"  TTL: {config.cache.ttl}s")
         console.print(f"  Max Entries: {config.cache.max_entries}")
 
@@ -119,9 +120,9 @@ def print_query_result(response: ContextResponse) -> None:
     )
 
     if response.matched_routes:
-        console.print(f"  Routes: {', '.join(response.matched_routes)}")
+        console.print(f"  Routes: {escape(', '.join(response.matched_routes))}")
     if response.denied_sources:
-        console.print(f"  [red]Denied sources: {', '.join(response.denied_sources)}[/red]")
+        console.print(f"  [red]Denied sources: {escape(', '.join(response.denied_sources))}[/red]")
 
     console.print(f"  Evaluated in: {response.evaluation_time_ms:.2f}ms")
 
@@ -139,9 +140,9 @@ def print_query_result(response: ContextResponse) -> None:
         for i, chunk in enumerate(response.chunks, 1):
             table.add_row(
                 str(i),
-                chunk.source,
-                chunk.title or "-",
-                chunk.path or "-",
+                escape(chunk.source),
+                escape(chunk.title) or "-",
+                escape(chunk.path) or "-",
                 str(chunk.token_count),
                 f"{chunk.relevance_score:.2f}",
             )
@@ -154,8 +155,8 @@ def print_query_result(response: ContextResponse) -> None:
                 preview += "..."
             console.print(
                 Panel(
-                    preview,
-                    title=f"[bold]Chunk {i}[/bold] — {chunk.title or chunk.source}",
+                    escape(preview),
+                    title=f"[bold]Chunk {i}[/bold] — {escape(chunk.title or chunk.source)}",
                     border_style="dim",
                 )
             )

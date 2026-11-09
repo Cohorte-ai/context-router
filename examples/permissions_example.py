@@ -40,6 +40,8 @@ restricted_config = RouterConfig(
             deny_sources=["projects"],
             default="deny",
         ),
+        # Without a catch-all rule, an agent no rule names gets every source.
+        PermissionConfig(agent="*", default="deny"),
     ],
     budget=BudgetConfig(),
 )
@@ -50,7 +52,7 @@ response = restricted_router.query(Query(text="Tell me about project atlas", age
 print(f"\nhr-agent:         {len(response.chunks)} chunks, {response.total_tokens} tokens")
 print(f"  Denied sources: {response.denied_sources}")
 
-# Unknown agent — denied by default
+# Unknown agent — denied by the catch-all "*" rule
 response = restricted_router.query(Query(text="Anything", agent="unknown-agent"))
-print(f"\nunknown-agent:    {len(response.chunks)} chunks (default: deny)")
+print(f"\nunknown-agent:    {len(response.chunks)} chunks (catch-all rule: deny)")
 print(f"  Denied sources: {response.denied_sources}")

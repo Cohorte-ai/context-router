@@ -147,3 +147,42 @@ def test_deny_paths_hide_a_top_level_folder(tmp_path: Path) -> None:
 def test_condition_key_suggests_when(tmp_path: Path) -> None:
     errors = _errors(tmp_path, ROUTE.replace("when:", "condition:"))
     assert "unknown key 'condition' (did you mean 'when'?)" in errors
+
+
+def test_query_metadata_cannot_override_agent_or_text() -> None:
+    from theaios.context_router.types import Query
+
+    config = RouterConfig(
+        sources={"hr": SourceConfig(name="hr", type="inline", content="salary bands")},
+        routes=[RouteConfig(name="hr-only", when='agent == "hr-bot"', sources=["hr"])],
+    )
+    router = Router(config)
+    spoofed = router.query(Query(text="x", agent="intern", metadata={"agent": "hr-bot"}))
+    assert spoofed.matched_routes == []
+    assert router.query(Query(text="x", agent="hr-bot")).matched_routes == ["hr-only"]
+
+
+def test_metadata_dot_key_in_route_conditions() -> None:
+    from theaios.context_router.types import Query
+
+    config = RouterConfig(
+        variables={"dept": "finance"},
+        sources={"fin": SourceConfig(name="fin", type="inline", content="ledger")},
+        routes=[RouteConfig(name="fin", when="metadata.department == $dept", sources=["fin"])],
+    )
+    response = Router(config).query(Query(text="x", metadata={"department": "finance"}))
+    assert response.matched_routes == ["fin"]
+
+
+def test_cli_inspect_shows_brackets_verbatim(tmp_path: Path) -> None:
+    from click.testing import CliRunner
+
+    from theaios.context_router.cli import main
+
+    path = tmp_path / "c.yaml"
+    path.write_text(
+        BASE
+        + "routes:\n  - name: '[r]'\n    when: 'text contains \"[b]x[/b]\"'\n    sources: [docs]\n"
+    )
+    result = CliRunner().invoke(main, ["inspect", "--config", str(path)])
+    assert "[r]" in result.output and "[b]x[/b]" in result.output

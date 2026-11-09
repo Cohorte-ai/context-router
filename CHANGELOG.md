@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - String values that spell numbers compare as numbers in route conditions (theaios-core 0.1.1).
 - Docs: the validator lists and the variables section now match the behavior.
 - **Security:** `deny_paths: ["**/secrets/**"]` did not hide a `secrets/` folder at the top of a source, so an agent denied those files still received them. In path patterns, `**/` now also matches zero folders. This applies to `deny_paths`, `patterns` and `exclude_patterns`: the default `patterns: ["**/*"]` now includes top-level files (it skipped them), and `docs/**/*.md` includes files directly in `docs/`.
+- **Security:** query `metadata` could override the query's own fields in route conditions: `metadata={"agent": "hr-bot"}` sent by an intern matched `agent == "hr-bot"`. `text`, `agent` and `tags` now always win; metadata keys stay reachable at the top level and, as `metadata.key`, also in the documented nested form.
+- `context-router inspect` and `query` printed text in square brackets as terminal markup (names, conditions and chunk content could disappear); all text is now shown verbatim.
+- `examples/permissions_example.py` said an unknown agent is "denied by default" while it received every source; it now adds the catch-all `agent: "*"` deny rule that produces that result.
 - Custom source types registered with `@register_source` are accepted by validation (they were rejected unless built in code, and the new in-code validation briefly rejected those too).
 - `matched_routes` in the README quick start is in declaration order.
 

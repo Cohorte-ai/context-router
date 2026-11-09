@@ -159,12 +159,17 @@ class Router:
         matched_routes: list[str] = []
 
         # Build context for expression evaluation
-        expr_context: dict[str, object] = {
-            "text": q.text,
-            "agent": q.agent,
-            "tags": q.tags,
-        }
-        expr_context.update({str(k): v for k, v in q.metadata.items()})
+        # Metadata keys are reachable at the top level (as documented) and as `metadata.key`;
+        # the query's own fields always win, so metadata cannot change who is asking or what.
+        expr_context: dict[str, object] = {str(k): v for k, v in q.metadata.items()}
+        expr_context.update(
+            {
+                "text": q.text,
+                "agent": q.agent,
+                "tags": q.tags,
+                "metadata": dict(q.metadata),
+            }
+        )
 
         for route_name, route_sources, ast in self._compiled_routes:
             try:
