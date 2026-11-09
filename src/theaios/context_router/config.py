@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import os
-import re
 from pathlib import Path
 
 import yaml
+from theaios.core.env import interpolate_env, interpolate_recursive
 
 from theaios.context_router.types import (
     VALID_DEFAULT_PERMISSIONS,
@@ -37,33 +36,15 @@ class ConfigError(Exception):
 # Environment variable interpolation
 # ---------------------------------------------------------------------------
 
-_ENV_PATTERN = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
-
 
 def _interpolate_env(value: str) -> str:
-    """Replace ${ENV_VAR} placeholders with environment variable values."""
-
-    def _replace(m: re.Match[str]) -> str:
-        var_name = m.group(1)
-        return os.environ.get(var_name, m.group(0))
-
-    return _ENV_PATTERN.sub(_replace, value)
+    """Replace ${VAR} placeholders (see theaios.core.env)."""
+    return interpolate_env(value, strict_names=True)
 
 
 def _interpolate_recursive(obj: object) -> object:
-    """Recursively interpolate env vars in all string values."""
-    if isinstance(obj, str):
-        return _interpolate_env(obj)
-    if isinstance(obj, dict):
-        return {k: _interpolate_recursive(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_interpolate_recursive(v) for v in obj]
-    return obj
-
-
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
+    """Interpolate env vars in every string of a parsed config."""
+    return interpolate_recursive(obj, strict_names=True)
 
 
 def load_config(path: str = "context-router.yaml") -> RouterConfig:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 from theaios.context_router.config import ConfigError, load_config
 from theaios.context_router.engine import Router
