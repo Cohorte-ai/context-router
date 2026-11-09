@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2026-11-09
+
+### Fixed
+
+- A route whose `when` used an undefined `$variable` (a typo) or `matches` (the context router has no matchers) loaded fine and then never matched, silently. Such configs are now rejected when they load (`load_config`, `Router(...)`, the CLI), with a "did you mean" suggestion. Disabled routes are not checked. **If your config stops loading after upgrading, it had a route that never matched.**
+- The docs described `matches` as resolving named matchers in the router; it never did. Corrected.
+
+### Changed
+
+- Requires theaios-core 0.1.1 or later.
+
 ## [0.2.3] - 2026-11-09
 
 ### Changed

@@ -16,6 +16,7 @@ from theaios.context_router.budget import (
     score_relevance,
 )
 from theaios.context_router.cache import Cache
+from theaios.context_router.config import when_errors
 from theaios.context_router.expressions import (
     ASTNode,
     ExpressionError,
@@ -64,6 +65,9 @@ class Router:
                 raise ExpressionError(
                     f"Error in route '{route.name}': {e}",
                 ) from e
+            problems = when_errors(route.when, config.variables)
+            if problems:
+                raise ExpressionError(f"Error in route '{route.name}': {'; '.join(problems)}")
             self._compiled_routes.append((route.name, route.sources, ast))
 
         # Instantiate source implementations

@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import difflib
+from collections.abc import Iterable
 from pathlib import Path
 
 import yaml
+from theaios.core.expressions import ExpressionError, compile_expression, references
 from theaios.core.env import interpolate_env, interpolate_recursive
 
 from theaios.context_router.types import (
@@ -261,6 +264,30 @@ def _parse_config(raw: dict[str, object]) -> RouterConfig:
 # ---------------------------------------------------------------------------
 
 
+def _did_you_mean(name: str, known: Iterable[str]) -> str:
+    close = difflib.get_close_matches(name, list(known), n=1)
+    return f" (did you mean '{close[0]}'?)" if close else ""
+
+
+def when_errors(when: str, variables: Iterable[str]) -> list[str]:
+    """Problems in a route's ``when``: a syntax error, an undefined ``$variable``, or
+    ``matches`` (context-router has no matchers). Each would make the route never match."""
+    try:
+        refs = references(compile_expression(when))
+    except ExpressionError as exc:
+        return [f"invalid 'when': {exc}"]
+    known = set(variables)
+    errors = [
+        f"'when' uses undefined variable '${name}'{_did_you_mean(name, known)}"
+        for name in sorted(refs.variables - known)
+    ]
+    errors += [
+        f"'when' uses 'matches {name}', but context-router has no matchers"
+        for name in sorted(refs.matchers)
+    ]
+    return errors
+
+
 def validate_config(config: RouterConfig) -> list[str]:
     """Return list of validation errors (empty = valid)."""
     errors: list[str] = []
@@ -308,6 +335,11 @@ def validate_config(config: RouterConfig) -> list[str]:
 
         if not route.sources:
             errors.append(f"{prefix} ({route.name}): at least one source is required")
+
+        if route.enabled:
+            errors.extend(
+                f"{prefix} ({route.name}): {e}" for e in when_errors(route.when, config.variables)
+            )
 
         for sname in route.sources:
             if sname not in source_names:
